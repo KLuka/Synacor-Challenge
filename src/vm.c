@@ -49,7 +49,7 @@
 /*************************************************************
  * Declarations
  */
- 
+
 /* Registers functions */
 void			reg_init		(void);
 unsigned short 	reg_read		(unsigned short address);
@@ -68,6 +68,7 @@ unsigned short 	stack_pop		(void);
 void		 	stack_push		(unsigned short val);
 
 /* Binary file functions */
+int binary_init					(int argc, char *argv[]);
 int binary_load					(void);
 int binary_exec					(void);
 
@@ -87,6 +88,7 @@ void vm_fail					(const char *fmt, ...);
 typedef struct {
 	int 			size;
 	int				length;
+	char			*path;
 } binary_t;
 
 typedef struct {
@@ -125,7 +127,13 @@ registers_t		registers;
 int main(int argc, char *argv[])
 {
 	int ret;
-
+	
+	/* Set binary file path */
+	ret = binary_init(argc, argv);
+	if (ret < 0) {
+		vm_fail("Please provide path to binary file ...");
+	}
+	
 	/* Initializes registers, memory and stack */
 	reg_init();
 	mem_init();
@@ -147,6 +155,18 @@ int main(int argc, char *argv[])
 }
 
 /**
+ * Initializes binary file
+ */
+
+int binary_init(int argc, char *argv[])
+{
+	/* Set path to binary file - first argument */
+	binary.path = argv[1];
+	
+	return (argc < 2) ? -1 : 0;
+}
+
+/**
  * Loads binary file into memory
  */
  
@@ -159,9 +179,9 @@ int binary_load()
 	vm_info("Loading program ...");
 
 	/* Open binary file */
-	fp = fopen("../challenge.bin", "r");
+	fp = fopen(binary.path, "r");
 	if (!fp) {
-		vm_fail("Cannot open binary file ...");
+		vm_fail("Cannot open binary file ... [%s]", binary.path);
 	}
 	
 	/* Get binary size */
@@ -170,7 +190,8 @@ int binary_load()
 	fseek(fp, 0L, SEEK_SET);
 	
 	/* Info */
-	vm_info("Program size: %d B", binary.size);
+	vm_info("Binary path: %s",		binary.path);
+	vm_info("Binary size: %d B", 	binary.size);
 	
 	/* Load binary to memory at offset 0 */
 	ret = fread(&memory.contents[0], sizeof(unsigned char), binary.size, fp);
