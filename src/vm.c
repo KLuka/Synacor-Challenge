@@ -211,14 +211,15 @@ int binary_load()
  
 int binary_exec()
 {
-	/* Program counter */
-	int pc = 0;
+	int pc 		= 0;		/* Program counter */
+	int halt 	= 0;		/* Halt flag */
+	
 	vm_info("Executing program ...");
 
 	/* Execute binary program */
-	while (1) {
+	while (!halt) {
 		
-		operation_exec(
+		halt = operation_exec(
 			memory.contents[pc],
 			memory.contents[pc+1],
 			memory.contents[pc+2],
@@ -229,6 +230,9 @@ int binary_exec()
 			vm_fail("Program counter out of bounds.");
 		}
 	}
+	
+	/* Execution halted */
+	vm_info("Execution halted ... [pc: %d]", pc);
 	return 0;
 }
 
@@ -238,11 +242,14 @@ int binary_exec()
 
 int operation_exec(unsigned short opcode, unsigned short a, unsigned short b, unsigned short c, int *pc)
 {	
+	int halt = 0;		/* Halt execution */
+
 	switch (opcode) {
 		/* Halt */
 		case 0 	:
-			vm_info("Halted ... [pc:%d]", *pc);
-			exit(0);
+			halt = 1;
+			*pc += 1;
+			break;
 		/* Set */
 		case 1 	:
 			reg_write(a, reg_read(b));
@@ -348,7 +355,7 @@ int operation_exec(unsigned short opcode, unsigned short a, unsigned short b, un
 			vm_fail("Function %s() failed! [opcode:%d] [pc:%d]", __FUNCTION__, opcode, *pc);
 	}
 	
-	return 0;
+	return halt;
 }
 
 /**
